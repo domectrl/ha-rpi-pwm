@@ -1,0 +1,15 @@
+{
+    "domain": "rpi-pwm",
+    "name": "Raspberry Pi PWM device",
+    "codeowners": [
+        "@domectrl"
+    ],
+    "config_flow": true,
+    "documentation": "https://github.com/domectrl/ha-rpi-pwm",
+    "iot_class": "local_push",
+    "issue_tracker": "https://github.com/domectrl/ha-rpi-pwm/issues",
+    "requirements": [
+        "rpi-hardware-pwm>=0.2.2"
+    ],
+    "version": "0.9.1"
+}

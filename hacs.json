@@ -1,5 +1,5 @@
 {
-    "name": "Integration blueprint",
-    "homeassistant": "2025.2.4",
+    "name": "Raspberry Pi PWM",
+    "homeassistant": "2025.3.3",
     "hacs": "2.0.1"
 }
