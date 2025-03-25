@@ -1,6 +1,6 @@
 # Home Assistant Raspberry Pi PWM custom integration
 
-**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant nowdays depends on pigpio. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). As This variant is  also be installable and configurable via confg flow instead of via YAML.**
+**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant depends on pigpio, and does not support the RPi5 hardware. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). This variant is  also be installable and configurable via confg flow instead of via YAML.**
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
@@ -16,13 +16,14 @@
 
 The rpi-pwm component allows to control multiple outputs using pulse-width modulation. This can be used to control devices, for example LED strips. It supports one-color, RGB and RGBW LEDs driven by the hardware pins. A PWM output can also be configured as a number. Connection to the hardware is made via the device file system of Linux.
 
-Before use you might need to configure your system. Please check the details at the webpage of [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm).
+Before use you might need to configure your systems overlays. Please check the details at the webpage of [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm).
 
 **This integration can set up the following platforms.**
 
 Platform | Description
 -- | --
 `light` | Write LED signal to digital PWM outputs.
+`fan` | Control a fan output.
 `number` | Writes signal represented by a number to PWM outputs.
 
 
