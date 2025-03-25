@@ -1,6 +1,6 @@
 # Home Assistant Raspberry Pi PWM custom integration
 
-**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant nowdays depends on pigpio. In order to make the integration simpler, and less dependency-prone, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). As I had learned how to use config-flow setup in [ha-pca9685](https://github.com/domectrl/ha-pca9685), this variant will also be installable and configurable via confg flow.**
+**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant nowdays depends on pigpio. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). As This variant is  also be installable and configurable via confg flow instead of via YAML.**
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
