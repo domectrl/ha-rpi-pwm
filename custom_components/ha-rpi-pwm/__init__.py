@@ -1,4 +1,4 @@
-"""The pca9685 PWM component."""
+"""The RPi PWM component."""
 
 import logging
 
