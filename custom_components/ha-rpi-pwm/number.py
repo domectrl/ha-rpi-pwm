@@ -22,13 +22,19 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from .const import (
     ATTR_FREQUENCY,
     ATTR_INVERT,
+    CONF_FREQUENCY,
     CONF_INVERT,
     CONF_NORMALIZE_LOWER,
     CONF_NORMALIZE_UPPER,
     CONF_STEP,
     DOMAIN,
-    PCA9685_DRIVERS,
+    GPIO13,
+    GPIO18,
+    GPIO19,
+    RPI5,
 )
+from . import _find_board_revision
+from rpi_hardware_pwm import HardwarePWM
 
 if TYPE_CHECKING:
     from types import MappingProxyType
@@ -36,8 +42,6 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-
-    from .pca_driver import PCA9685Driver
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,26 +52,23 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up this platform for a specific ConfigEntry(==PCA9685 device)."""
-    pca_driver: PCA9685Driver = hass.data[DOMAIN][PCA9685_DRIVERS][
-        config_entry.entry_id
-    ]
-
-    entities = [
-        PwmNumber(
-            config=entry.data,
-            driver=pca_driver,
-            unique_id=unique_id,
-            config_unique_id=str(config_entry.unique_id),
+    if config_entry.data[CONF_TYPE] == Platform.NUMBER:
+        _LOGGER.debug(
+            "Adding Number %s with id %s",
+            config_entry.data[CONF_NAME],
+            config_entry.unique_id,
         )
-        for unique_id, entry in config_entry.subentries.items()
-        if entry.data[CONF_TYPE] == Platform.NUMBER
-    ]
+        async_add_entities(
+            [
+                RpiPwmNumber(
+                    config=config_entry.data,
+                    unique_id=config_entry.unique_id,
+                )
+            ]
+        )
 
-    if len(entities) > 0:
-        async_add_entities(entities)
 
-
-class PwmNumber(RestoreNumber):
+class RpiPwmNumber(RestoreNumber):
     """Representation of a simple  PWM output."""
 
     _attr_should_poll = False
@@ -75,27 +76,42 @@ class PwmNumber(RestoreNumber):
     def __init__(
         self,
         config: MappingProxyType[str, Any],
-        driver: PCA9685Driver,
-        unique_id: str,
-        config_unique_id: str,
+        unique_id: str | None,
     ) -> None:
         """Initialize one-color PWM LED."""
-        self._driver = driver
+        self._config = config
+        self._simulate_rpi = False
+        self._rpi_board_revision = _find_board_revision()
+        if len(self._rpi_board_revision) == 0:
+            self._simulate_rpi = True
+        chip = 0
+        channel = 0
+        if config[CONF_PIN] in [GPIO13, GPIO19]:
+            channel = 1
+        if self._rpi_board_revision.find(RPI5) != -1:
+            chip = 2
+            if config[CONF_PIN] in [GPIO18, GPIO19]:
+                channel += 2
+
+        if not self._simulate_rpi:
+            self._pwm: HardwarePWM = HardwarePWM(
+                pwm_channel=channel, hz=config[CONF_FREQUENCY], chip=chip
+            )
+
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, config_unique_id)},
+            identifiers={(DOMAIN, "rpi_gpio")},
             name=DOMAIN.upper(),
-            manufacturer="NXP",
-            model="PCA9685",
+            manufacturer="Raspberry Pi",
+            model=self._rpi_board_revision.strip("\x00"),
         )
         self._attr_unique_id = unique_id
-        self._config = config
+
         self._attr_native_min_value = config[CONF_MINIMUM]
         self._attr_native_max_value = config[CONF_MAXIMUM]
         self._attr_native_step = config[CONF_STEP]
         self._attr_mode = config[CONF_MODE]
         self._attr_native_value = config[CONF_MINIMUM]
         self._attr_name = config[CONF_NAME]
-        self._pin = int(config[CONF_PIN])
 
     async def async_added_to_hass(self) -> None:
         """Handle entity about to be added to hass event."""
@@ -113,9 +129,11 @@ class PwmNumber(RestoreNumber):
             await self.async_set_native_value(self._config[CONF_MINIMUM])
 
     @property
-    def frequency(self) -> int:
+    def frequency(self) -> float:
         """Return PWM frequency."""
-        return self._driver.get_pwm_frequency()
+        if self._simulate_rpi:
+            return self._config[CONF_FREQUENCY]
+        return self._pwm._hz  # noqa: SLF001
 
     @property
     def invert(self) -> bool:
@@ -142,7 +160,7 @@ class PwmNumber(RestoreNumber):
             used_value = self._config[CONF_NORMALIZE_UPPER] - value
         used_value -= self._config[CONF_NORMALIZE_LOWER]
         # Scale range from N_L..N_U to 0..65535 (pca9685)
-        range_pwm = 4095
+        range_pwm = 100.0
         range_value = (
             self._config[CONF_NORMALIZE_UPPER] - self._config[CONF_NORMALIZE_LOWER]
         )
@@ -153,6 +171,7 @@ class PwmNumber(RestoreNumber):
         scaled_value = min(range_pwm, scaled_value)
         scaled_value = max(0, scaled_value)
         # Set value to driver
-        self._driver.set_pwm(led_num=self._pin, value=scaled_value)
+        if not self._simulate_rpi:
+            self._pwm.change_duty_cycle(duty_cycle=scaled_value)
         self._attr_native_value = value
         self.schedule_update_ha_state()

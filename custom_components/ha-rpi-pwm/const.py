@@ -1,11 +1,9 @@
-"""Constants for the pca9685 integration."""
+"""Constants for the rpi-pwm integration."""
 
 from typing import Final
 
-DOMAIN = "pca9685"
+DOMAIN = "rpi-pwm"
 
-CONF_BUS = "I2C bus"
-CONF_ADDR = "I2C adress"
 CONF_FREQUENCY = "frequency"
 CONF_NORMALIZE_LOWER = "normalize_lower"
 CONF_NORMALIZE_UPPER = "normalize_upper"
@@ -13,10 +11,6 @@ CONF_NORMALIZE_UPPER = "normalize_upper"
 CONF_INVERT = "invert"
 CONF_STEP = "step"
 CONF_PIN = "pin"
-CONF_PIN_RED = "pin (red)"
-CONF_PIN_GREEN = "pin (green)"
-CONF_PIN_BLUE = "pin (blue)"
-CONF_PIN_WHITE = "pin (white)"
 
 MODE_SLIDER = "slider"
 MODE_BOX = "box"
@@ -25,23 +19,21 @@ MODE_AUTO = "auto"
 ATTR_FREQUENCY = "frequency"
 ATTR_INVERT = "invert"
 
-DEFAULT_ADDR = 0x40
 DEFAULT_BRIGHTNESS = 255
 DEFAULT_COLOR = (0.0, 0.0)
-DEFAULT_FREQ = 200
+DEFAULT_FREQ = 100
 DEFAULT_MODE = "auto"
+DEFAULT_FAN_PERCENTAGE = 100.0
 
-CONST_SIMPLE_LED_PINS = 1
-CONST_RGB_LED_PINS = 3
-CONST_RGBW_LED_PINS = 4
 CONST_HA_MAX_INTENSITY = 256
-CONST_PCA_MAX_INTENSITY = 4096
-CONST_PCA_INT_MULTIPLIER = int(
-    CONST_PCA_MAX_INTENSITY / CONST_HA_MAX_INTENSITY
-)  # equals 16
-CONST_ADDR_MIN = 64
-CONST_ADDR_MAX = 127
-CONST_PWM_FREQ_MIN = 24
-CONST_PWM_FREQ_MAX = 1526
+CONST_PWM_FREQ_MIN = 10
+CONST_PWM_FREQ_MAX = 8000
 
-PCA9685_DRIVERS: Final = "pca9685_drivers"
+RPI5 = "Raspberry Pi 5"
+
+GPIO12 = "GPIO12"
+GPIO13 = "GPIO13"
+GPIO18 = "GPIO18"
+GPIO19 = "GPIO19"
+
+RPI_PWM_PINS = 2

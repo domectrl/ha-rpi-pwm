@@ -1,5 +1,8 @@
 {
     "name": "Raspberry Pi PWM",
+    "filename": "rpi-pwm.zip",
+    "hide_default_branch": true,
     "homeassistant": "2025.3.3",
-    "hacs": "2.0.1"
+    "render_readme": true,
+    "zip_release": true
 }
