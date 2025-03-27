@@ -1,6 +1,6 @@
 # Home Assistant Raspberry Pi PWM custom integration
 
-**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant depends on pigpio, and does not support the RPi5 hardware. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). This variant is  also be installable and configurable via confg flow instead of via YAML.**
+**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant depends on pigpio, and does not support the RPi5 hardware. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). This variant is installable and configurable via confg flow instead of via YAML.**
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
@@ -88,7 +88,7 @@ In the next menu, one can choose what entities to add. The possible entities sho
 
 These last four parameters might require a little more explanation:
 - The minimum/maximum define the range one can select on this number, for example 0..100%.
-- The 'normalize' parameters define at what range the output of the PWM normalizes. The Raspberry Pi registers can be programmed with a range of 0..4095. In normal cases, the the output register of the PCA9685 is set to 0 for value 0, and 4095 for value 100. If the normalize value is for example to 10..60, it will set the register value 0 for each value <10. Above 10, it will start raising the register, up to 4095 for value 60. Above 60, the register value will remain 4095.
+- The 'normalize' parameters define at what range the output of the PWM normalizes. The Raspberry Pi registers can be programmed with a range of 0..100%. In normal cases, the the output register of the PCA9685 is set to 0% for value 0, and 100% for value 100. If the normalize value is for example to 10..60, it will set the register value 0% for each value <10. Above 10, it will start raising the register, up to 100% for value 60. Above 60, the register value will remain 100%.
 - Using a negative value for the normalize_lower parameter, will clip the output to the register. This way, someone can assure that the value of the register will be always for larger than, for example, 10%. Using a larger-than-maximum value will clip the output to the register on the upper side.
 
 ## Contributions are welcome!
