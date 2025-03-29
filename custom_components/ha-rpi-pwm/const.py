@@ -10,7 +10,8 @@ CONF_NORMALIZE_UPPER = "normalize_upper"
 
 CONF_INVERT = "invert"
 CONF_STEP = "step"
-CONF_PIN = "pin"
+CONF_RPI = "raspberry_pi"
+CONF_RPI_MODEL = "rpi_board_model"
 
 MODE_SLIDER = "slider"
 MODE_BOX = "box"
@@ -29,7 +30,9 @@ CONST_HA_MAX_INTENSITY = 256
 CONST_PWM_FREQ_MIN = 10
 CONST_PWM_FREQ_MAX = 8000
 
+RPI1_2_3 = "Raspberry Pi"
 RPI5 = "Raspberry Pi 5"
+RPI_UNKNOWN = "unknown"
 
 GPIO12 = "GPIO12"
 GPIO13 = "GPIO13"

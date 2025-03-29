@@ -3,6 +3,8 @@
 import logging
 from datetime import timedelta
 
+from typing import TYPE_CHECKING, Any
+
 from pathlib import Path
 import homeassistant.util.dt as dt_util
 from homeassistant.components.light import (
@@ -20,7 +22,6 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.components.hassio import get_os_info
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import (
@@ -28,19 +29,19 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.config_entries import ConfigEntry
+from types import MappingProxyType
 
 from .const import (
-    CONF_FREQUENCY,
-    CONF_PIN,
+    CONF_RPI_MODEL,
     DEFAULT_BRIGHTNESS,
     DOMAIN,
-    RPI5,
-    GPIO13,
-    GPIO18,
-    GPIO19,
+    CONF_RPI,
+    CONF_RPI_MODEL,
+    RPI_UNKNOWN,
 )
-from rpi_hardware_pwm import HardwarePWM
-from . import _find_board_revision
+from . import _make_pwm_device
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,9 +56,8 @@ async def async_setup_entry(
         async_add_entities(
             [
                 RpiPwmLed(
-                    pin=config_entry.data[CONF_PIN],
-                    name=config_entry.data[CONF_NAME],
-                    frequency=config_entry.data[CONF_FREQUENCY],
+                    hass=hass,
+                    config=config_entry.data,
                     unique_id=config_entry.unique_id,
                 )
             ]
@@ -71,39 +71,28 @@ class RpiPwmLed(LightEntity, RestoreEntity):
 
     def __init__(
         self,
-        name: str,
+        config: MappingProxyType[str, Any],
         unique_id: str | None,
-        pin: str,
-        frequency: float,
+        hass: HomeAssistant,
     ) -> None:
         """Initialize one-color PWM LED."""
+        self._hass = hass
+        self._config = config
         self._simulate_rpi = False
-        self._rpi_board_revision = _find_board_revision()
-        if len(self._rpi_board_revision) == 0:
+        if config[CONF_RPI] == RPI_UNKNOWN:
             self._simulate_rpi = True
-        chip = 0
-        channel = 0
-        if pin in [GPIO13, GPIO19]:
-            channel = 1
-        if self._rpi_board_revision.find(RPI5) != -1:
-            chip = 2
-            if pin in [GPIO18, GPIO19]:
-                channel += 2
-
-        if not self._simulate_rpi:
-            self._pwm = HardwarePWM(pwm_channel=channel, hz=frequency, chip=chip)
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "rpi_gpio")},
             name=DOMAIN.upper(),
             manufacturer="Raspberry Pi",
-            model=self._rpi_board_revision.strip("\x00"),
+            model=config[CONF_RPI_MODEL],
         )
         self._attr_unique_id = unique_id
         self._attr_is_on = False
         self._attr_brightness = DEFAULT_BRIGHTNESS
         self._attr_supported_features |= LightEntityFeature.TRANSITION
-        self._attr_name = name
+        self._attr_name = config[CONF_NAME]
         self._transition_step_time = timedelta(
             milliseconds=150
         )  # Transition step time in ms
@@ -117,13 +106,21 @@ class RpiPwmLed(LightEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity about to be added to hass event."""
         await super().async_added_to_hass()
+
+        if not self._simulate_rpi:
+            self._pwm = await self._hass.async_add_executor_job(
+                _make_pwm_device, self._config
+            )
+
         if last_state := await self.async_get_last_state():
             self._attr_is_on = last_state.state == STATE_ON
             self._attr_brightness = last_state.attributes.get(
                 "brightness", DEFAULT_BRIGHTNESS
             )
             if (self._attr_brightness is not None) and not self._simulate_rpi:
-                self._pwm.start(self._from_hass_brightness(self._attr_brightness))
+                self._hass.async_add_executor_job(
+                    self._pwm.start, self._from_hass_brightness(self._attr_brightness)
+                )
 
     @property
     def should_poll(self) -> bool:
@@ -142,8 +139,9 @@ class RpiPwmLed(LightEntity, RestoreEntity):
                 duration=timedelta(seconds=transition_time),
             )
         elif not self._simulate_rpi:
-            self._pwm.change_duty_cycle(
-                duty_cycle=self._from_hass_brightness(self._attr_brightness)
+            self._hass.async_add_executor_job(
+                self._pwm.change_duty_cycle,
+                self._from_hass_brightness(self._attr_brightness),
             )
         self._attr_is_on = True
         self.schedule_update_ha_state()
@@ -157,7 +155,7 @@ class RpiPwmLed(LightEntity, RestoreEntity):
                     brightness=0, duration=timedelta(seconds=transition_time)
                 )
             elif not self._simulate_rpi:
-                self._pwm.change_duty_cycle(0.0)
+                self._hass.async_add_executor_job(self._pwm.change_duty_cycle, 0.0)
 
         self._attr_is_on = False
         self.schedule_update_ha_state()
@@ -175,7 +173,7 @@ class RpiPwmLed(LightEntity, RestoreEntity):
         if self._transition_begin_brightness != brightness:
             self._transition_start = dt_util.utcnow()
             self._transition_end = self._transition_start + duration
-            self._transition_end_brightness = self._from_hass_brightness(brightness)
+            self._transition_end_brightness = brightness
             # Start transition cycles.
             self._transition_lister = async_track_time_interval(
                 self.hass, self._async_step_transition, self._transition_step_time
@@ -188,7 +186,10 @@ class RpiPwmLed(LightEntity, RestoreEntity):
         now = dt_util.utcnow()
         if now > self._transition_end:
             if not self._simulate_rpi:
-                self._pwm.change_duty_cycle(duty_cycle=self._transition_end_brightness)
+                self._hass.async_add_executor_job(
+                    self._pwm.change_duty_cycle,
+                    self._transition_end_brightness,
+                )
             if self._transition_lister:
                 self._transition_lister()  # Stop cycling
         else:
@@ -210,10 +211,12 @@ class RpiPwmLed(LightEntity, RestoreEntity):
                 )
             )
             if not self._simulate_rpi:
-                self._pwm.change_duty_cycle(duty_cycle=target_brightness)
+                self._hass.async_add_executor_job(
+                    self._pwm.change_duty_cycle, target_brightness
+                )
 
     def _from_hass_brightness(self, brightness: int | None) -> float:
-        """Convert Home Assistant  units (0..256) to 0.0..1000"""
+        """Convert Home Assistant  units (0..256) to 0.0..1000."""
         if brightness:
             r_val = (brightness * 100.0) / 255
             r_val = min(r_val, 100.0)

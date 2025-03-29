@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.const import (
     STATE_ON,
     CONF_NAME,
-    CONF_PIN,
     CONF_TYPE,
     Platform,
 )
@@ -21,16 +20,14 @@ from homeassistant.components.fan import (
 )
 
 from .const import (
+    CONF_RPI_MODEL,
     DOMAIN,
-    GPIO13,
-    GPIO18,
-    GPIO19,
-    RPI5,
     DEFAULT_FAN_PERCENTAGE,
-    DEFAULT_FREQ,
+    RPI_UNKNOWN,
+    CONF_RPI,
+    CONF_RPI_MODEL,
 )
-from . import _find_board_revision
-from rpi_hardware_pwm import HardwarePWM
+from . import _make_pwm_device
 
 if TYPE_CHECKING:
     from types import MappingProxyType
@@ -53,17 +50,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up this platform for a specific ConfigEntry(==PCA9685 device)."""
     if config_entry.data[CONF_TYPE] == Platform.FAN:
-        _LOGGER.debug(
-            "Adding Fan %s with id %s, conf: %s",
-            config_entry.data[CONF_NAME],
-            config_entry.unique_id,
-            config_entry.data,
-        )
         async_add_entities(
             [
                 RpiPwmFan(
                     config=config_entry.data,
                     unique_id=config_entry.unique_id,
+                    hass=hass,
                 )
             ]
         )
@@ -78,32 +70,20 @@ class RpiPwmFan(FanEntity, RestoreEntity):
         self,
         config: MappingProxyType[str, Any],
         unique_id: str | None,
+        hass: HomeAssistant,
     ):
         """Initialize PWM FAN."""
+        self._hass = hass
         self._config = config
         self._simulate_rpi = False
-        self._rpi_board_revision = _find_board_revision()
-        if len(self._rpi_board_revision) == 0:
+        if config[CONF_RPI] == RPI_UNKNOWN:
             self._simulate_rpi = True
-        chip = 0
-        channel = 0
-        if config[CONF_PIN] in [GPIO13, GPIO19]:
-            channel = 1
-        if self._rpi_board_revision.find(RPI5) != -1:
-            chip = 2
-            if config[CONF_PIN] in [GPIO18, GPIO19]:
-                channel += 2
-
-        if not self._simulate_rpi:
-            self._pwm: HardwarePWM = HardwarePWM(
-                pwm_channel=channel, hz=DEFAULT_FREQ, chip=chip
-            )
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, "rpi_gpio")},
             name=DOMAIN.upper(),
             manufacturer="Raspberry Pi",
-            model=self._rpi_board_revision.strip("\x00"),
+            model=config[CONF_RPI_MODEL],
         )
         self._attr_unique_id = unique_id
         self._attr_name = config[CONF_NAME]
@@ -114,11 +94,16 @@ class RpiPwmFan(FanEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity about to be added to hass event."""
         await super().async_added_to_hass()
+
+        if not self._simulate_rpi:
+            self._pwm = await self._hass.async_add_executor_job(
+                _make_pwm_device, self._config
+            )
         if last_state := await self.async_get_last_state():
-            self._is_on = last_state.state == STATE_ON
             self._percentage = last_state.attributes.get(
                 "percentage", DEFAULT_FAN_PERCENTAGE
             )
+            self._is_on = last_state.state == STATE_ON
 
     @property
     def is_on(self):
@@ -143,7 +128,7 @@ class RpiPwmFan(FanEntity, RestoreEntity):
 
     def turn_off(self, **kwargs) -> None:
         """Turn the fan off."""
-        if self.is_on:
+        if self.is_on and not self._simulate_rpi:
             self._pwm.change_duty_cycle(duty_cycle=0)
         self._is_on = False
         self.schedule_update_ha_state()

@@ -1,29 +1,47 @@
 """The RPi PWM component."""
 
+from email import contentmanager
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, CONF_PIN
 from homeassistant.core import HomeAssistant
-
-from pathlib import Path
+from rpi_hardware_pwm import HardwarePWM
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.LIGHT, Platform.NUMBER, Platform.FAN]
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
 
-def _find_board_revision() -> str:
-    """Return board revision of the raspberry pi."""
-    """e.g.: Raspberry Pi 5 Model B Rev 1.0."""
-    p = Path("//proc//device-tree//model")
-    if p.is_file():
-        return p.read_text()
-    _LOGGER.warning(
-        "Could not detect raspberry pi model, are you sure this is a pi?"
-        " rpi-pwm will continue in simlation mode."
+from .const import (
+    CONF_FREQUENCY,
+    RPI5,
+    GPIO13,
+    GPIO18,
+    GPIO19,
+    CONF_RPI,
+)
+
+
+def _make_pwm_device(config: MappingProxyType[str, Any]) -> HardwarePWM:
+    """Non-async function to create the HardwarePWM object."""
+    chip = 0
+    channel = 0
+    if config[CONF_PIN] in [GPIO13, GPIO19]:
+        channel = 1
+    if config[CONF_RPI] == RPI5:
+        chip = 2
+        if config[CONF_PIN] in [GPIO18, GPIO19]:
+            channel += 2
+    pwm = HardwarePWM(
+        pwm_channel=channel,
+        hz=config[CONF_FREQUENCY],
+        chip=chip,
     )
-    return ""
+    pwm.start(0)
+    return pwm
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

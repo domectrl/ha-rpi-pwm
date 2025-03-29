@@ -1,5 +1,6 @@
 """Config flow definition for rpi_pwm."""
 
+from genericpath import isfile
 import logging
 from typing import Any, ClassVar
 
@@ -17,6 +18,7 @@ from homeassistant.const import (
     CONF_MAXIMUM,
     CONF_MINIMUM,
     CONF_MODE,
+    CONF_PIN,
     CONF_NAME,
     CONF_TYPE,
     Platform,
@@ -29,7 +31,6 @@ from .const import (
     CONF_INVERT,
     CONF_NORMALIZE_LOWER,
     CONF_NORMALIZE_UPPER,
-    CONF_PIN,
     CONF_STEP,
     CONST_PWM_FREQ_MAX,
     CONST_PWM_FREQ_MIN,
@@ -43,7 +44,14 @@ from .const import (
     GPIO18,
     GPIO19,
     RPI_PWM_PINS,
+    RPI1_2_3,
+    RPI5,
+    CONF_RPI,
+    RPI_UNKNOWN,
+    CONF_RPI_MODEL,
 )
+
+from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,11 +71,30 @@ class RpiPWMConfigFlow(ConfigFlow, domain=DOMAIN):
         for pwm in self.hass.config_entries.async_entries(DOMAIN):
             self._available_pins.remove(pwm.data[CONF_PIN])
 
+    async def _async_find_board_revision(self) -> str:
+        """Return board revision of the raspberry pi."""
+        """e.g.: Raspberry Pi 5 Model B Rev 1.0."""
+        p = Path("//proc//device-tree//model")
+        if p.is_file():
+            return await self.hass.async_add_executor_job(p.read_text)
+        _LOGGER.warning(
+            "Could not detect raspberry pi model, are you sure this is a pi?"
+            " rpi-pwm will continue in simlation mode."
+        )
+        return ""
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
         self._update_free_pins()
+        self._rpi_board_rev = await self._async_find_board_revision()
+        self._rpi_version = RPI_UNKNOWN
+
+        if self._rpi_board_rev.find(RPI5) != -1:
+            self._rpi_version = RPI5
+        elif self._rpi_board_rev.find(RPI1_2_3) != -1:
+            self._rpi_version = RPI1_2_3
 
         if (  # From 4 pins only 2 can be assigned to PWMs
             len(self._all_pins) - len(self._available_pins) >= RPI_PWM_PINS
@@ -94,8 +121,9 @@ class RpiPWMConfigFlow(ConfigFlow, domain=DOMAIN):
             title = self._make_entity_title(user_input=user_input)
             await self.async_set_unique_id(title)
             self._abort_if_unique_id_configured()
-
             user_input[CONF_TYPE] = Platform.LIGHT
+            user_input[CONF_RPI] = self._rpi_version
+            user_input[CONF_RPI_MODEL] = self._rpi_board_rev
             return self.async_create_entry(
                 title=self._make_entity_title(user_input=user_input),
                 data=user_input,
@@ -114,6 +142,8 @@ class RpiPWMConfigFlow(ConfigFlow, domain=DOMAIN):
             title = self._make_entity_title(user_input=user_input)
             await self.async_set_unique_id(title)
             self._abort_if_unique_id_configured()
+            user_input[CONF_RPI] = self._rpi_version
+            user_input[CONF_RPI_MODEL] = self._rpi_board_rev
             user_input[CONF_TYPE] = Platform.NUMBER
             return self.async_create_entry(
                 title=title,
@@ -134,7 +164,10 @@ class RpiPWMConfigFlow(ConfigFlow, domain=DOMAIN):
             title = self._make_entity_title(user_input=user_input)
             await self.async_set_unique_id(title)
             self._abort_if_unique_id_configured()
+            user_input[CONF_RPI] = self._rpi_version
+            user_input[CONF_RPI_MODEL] = self._rpi_board_rev
             user_input[CONF_TYPE] = Platform.FAN
+            user_input[CONF_FREQUENCY] = DEFAULT_FREQ
             return self.async_create_entry(
                 title=title,
                 data=user_input,
@@ -233,23 +266,26 @@ class RpiPWMConfigFlow(ConfigFlow, domain=DOMAIN):
         """Reconfigure the rpi-pwm device."""
         errors = {}
         if user_input is not None:
-            # Check if the device was already configured.
-            exists = False
-            for pca in self.hass.config_entries.async_entries(DOMAIN):
-                exists |= (pca.data[CONF_BUS] == user_input[CONF_BUS]) and (
-                    pca.data[CONF_ADDR] == user_input[CONF_ADDR]
-                )
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(),
+                data_updates=user_input,
+            )
 
-            if not exists:
-                return self.async_update_reload_and_abort(
-                    self._get_reconfigure_entry(),
-                    data_updates=user_input,
-                )
-            errors[CONF_ADDR] = "already_configured"
+        self._update_free_pins()
+        # Append also the current pins to the free-pins list
+        # and generate entity specific schema
+        data = self._get_reconfigure_entry().data
+        if data.get(CONF_PIN) is not None:
+            self._available_pins.append(data[CONF_PIN])
+            self._available_pins.sort()
+            if data[CONF_TYPE] == Platform.LIGHT:
+                schema = self._generate_schema_light()
+            elif data[CONF_TYPE] == Platform.FAN:
+                schema = self._generate_schema_fan()
+            else:
+                schema = self._generate_schema_number()
 
-        schema = self.add_suggested_values_to_schema(
-            await self._async_bus_scheme(), self._get_reconfigure_entry().data
-        )
+        schema = self.add_suggested_values_to_schema(schema, data)
 
         return self.async_show_form(
             step_id="reconfigure", data_schema=schema, errors=errors
