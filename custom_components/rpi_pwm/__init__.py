@@ -1,18 +1,13 @@
-"""The RPi PWM component."""
+"""The rpi PWM component."""
 
 import logging
-from email import contentmanager
+from types import MappingProxyType
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PIN, Platform
 from homeassistant.core import HomeAssistant
 from rpi_hardware_pwm import HardwarePWM
-
-_LOGGER = logging.getLogger(__name__)
-
-PLATFORMS = [Platform.LIGHT, Platform.NUMBER, Platform.FAN]
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any
 
 from .const import (
     CONF_FREQUENCY,
@@ -22,6 +17,10 @@ from .const import (
     GPIO19,
     RPI5,
 )
+
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = [Platform.LIGHT, Platform.NUMBER, Platform.FAN]
 
 
 def _make_pwm_device(config: MappingProxyType[str, Any]) -> HardwarePWM:

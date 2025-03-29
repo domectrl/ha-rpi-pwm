@@ -70,7 +70,7 @@ class RpiPwmFan(FanEntity, RestoreEntity):
         config: MappingProxyType[str, Any],
         unique_id: str | None,
         hass: HomeAssistant,
-    ):
+    ) -> None:
         """Initialize PWM FAN."""
         self._hass = hass
         self._config = config
@@ -105,16 +105,16 @@ class RpiPwmFan(FanEntity, RestoreEntity):
             self._is_on = last_state.state == STATE_ON
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         """Return true if device is on."""
         return self._is_on
 
     @property
-    def percentage(self):
+    def percentage(self) -> float:
         """Return the percentage property."""
         return self._percentage
 
-    def turn_on(self, percentage: None, preset_mode: None, **kwargs) -> None:
+    def turn_on(self, percentage: None, preset_mode: None, **kwargs) -> None:  # noqa: ANN003, ARG002
         """Turn on the fan."""
         if percentage is not None:
             self._percentage = percentage
@@ -125,7 +125,7 @@ class RpiPwmFan(FanEntity, RestoreEntity):
         self._is_on = True
         self.schedule_update_ha_state()
 
-    def turn_off(self, **kwargs) -> None:
+    def turn_off(self) -> None:
         """Turn the fan off."""
         if self.is_on and not self._simulate_rpi:
             self._pwm.change_duty_cycle(duty_cycle=0)

@@ -164,7 +164,7 @@ class RpiPwmLed(LightEntity, RestoreEntity):
             self._transition_lister()
         # initialize relevant values
         if not self._simulate_rpi:
-            self._transition_begin_brightness = self._pwm._duty_cycle
+            self._transition_begin_brightness = self._pwm._duty_cycle  # noqa: SLF001
         if self._transition_begin_brightness != brightness:
             self._transition_start = dt_util.utcnow()
             self._transition_end = self._transition_start + duration
@@ -215,7 +215,6 @@ class RpiPwmLed(LightEntity, RestoreEntity):
         if brightness:
             r_val = (brightness * 100.0) / 255
             r_val = min(r_val, 100.0)
-            r_val = max(r_val, 0.0)
-            return r_val
+            return max(r_val, 0.0)
 
         return 0

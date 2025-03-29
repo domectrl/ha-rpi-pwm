@@ -81,7 +81,8 @@ class RpiPWMConfigFlow(ConfigFlow, domain=DOMAIN):
         return ""
 
     async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
+        self,
+        user_input: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
         self._update_free_pins()
