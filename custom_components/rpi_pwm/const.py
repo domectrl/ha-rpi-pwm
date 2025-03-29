@@ -1,6 +1,5 @@
 """Constants for the rpi-pwm integration."""
 
-
 DOMAIN = "rpi-pwm"
 
 CONF_FREQUENCY = "frequency"
