@@ -1,5 +1,5 @@
 {
-    "domain": "rpi-pwm",
+    "domain": "rpi_pwm",
     "name": "Raspberry Pi PWM device",
     "codeowners": [
         "@domectrl"

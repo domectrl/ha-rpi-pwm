@@ -1,6 +1,6 @@
 """Constants for the rpi-pwm integration."""
 
-DOMAIN = "rpi-pwm"
+DOMAIN = "rpi_pwm"
 
 CONF_FREQUENCY = "frequency"
 CONF_NORMALIZE_LOWER = "normalize_lower"
