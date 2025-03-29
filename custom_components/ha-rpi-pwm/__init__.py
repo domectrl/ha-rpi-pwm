@@ -1,10 +1,10 @@
 """The RPi PWM component."""
 
-from email import contentmanager
 import logging
+from email import contentmanager
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_PIN
+from homeassistant.const import CONF_PIN, Platform
 from homeassistant.core import HomeAssistant
 from rpi_hardware_pwm import HardwarePWM
 
@@ -14,14 +14,13 @@ PLATFORMS = [Platform.LIGHT, Platform.NUMBER, Platform.FAN]
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-
 from .const import (
     CONF_FREQUENCY,
-    RPI5,
+    CONF_RPI,
     GPIO13,
     GPIO18,
     GPIO19,
-    CONF_RPI,
+    RPI5,
 )
 
 
@@ -46,7 +45,6 @@ def _make_pwm_device(config: MappingProxyType[str, Any]) -> HardwarePWM:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up rpi-pwm from a config entry."""
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(config_entry_update_listener))

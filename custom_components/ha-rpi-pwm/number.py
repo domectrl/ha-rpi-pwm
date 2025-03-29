@@ -18,6 +18,7 @@ from homeassistant.const import (
 )
 from homeassistant.helpers.device_registry import DeviceInfo
 
+from . import _make_pwm_device
 from .const import (
     ATTR_FREQUENCY,
     ATTR_INVERT,
@@ -26,13 +27,11 @@ from .const import (
     CONF_NORMALIZE_LOWER,
     CONF_NORMALIZE_UPPER,
     CONF_RPI,
+    CONF_RPI_MODEL,
     CONF_STEP,
     DOMAIN,
     RPI_UNKNOWN,
-    CONF_RPI_MODEL,
 )
-from rpi_hardware_pwm import HardwarePWM
-from . import _make_pwm_device
 
 if TYPE_CHECKING:
     from types import MappingProxyType

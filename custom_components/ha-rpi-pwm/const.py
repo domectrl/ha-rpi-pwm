@@ -1,6 +1,5 @@
 """Constants for the rpi-pwm integration."""
 
-from typing import Final
 
 DOMAIN = "rpi-pwm"
 

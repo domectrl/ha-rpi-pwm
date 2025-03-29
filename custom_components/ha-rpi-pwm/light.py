@@ -2,10 +2,9 @@
 
 import logging
 from datetime import timedelta
+from types import MappingProxyType
+from typing import Any
 
-from typing import TYPE_CHECKING, Any
-
-from pathlib import Path
 import homeassistant.util.dt as dt_util
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -29,19 +28,15 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.config_entries import ConfigEntry
-from types import MappingProxyType
 
+from . import _make_pwm_device
 from .const import (
+    CONF_RPI,
     CONF_RPI_MODEL,
     DEFAULT_BRIGHTNESS,
     DOMAIN,
-    CONF_RPI,
-    CONF_RPI_MODEL,
     RPI_UNKNOWN,
 )
-from . import _make_pwm_device
-
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -5,29 +5,28 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.const import (
-    STATE_ON,
-    CONF_NAME,
-    CONF_TYPE,
-    Platform,
-)
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.components.fan import (
     ATTR_PERCENTAGE,
     FanEntity,
     FanEntityFeature,
 )
+from homeassistant.const import (
+    CONF_NAME,
+    CONF_TYPE,
+    STATE_ON,
+    Platform,
+)
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.restore_state import RestoreEntity
 
+from . import _make_pwm_device
 from .const import (
-    CONF_RPI_MODEL,
-    DOMAIN,
-    DEFAULT_FAN_PERCENTAGE,
-    RPI_UNKNOWN,
     CONF_RPI,
     CONF_RPI_MODEL,
+    DEFAULT_FAN_PERCENTAGE,
+    DOMAIN,
+    RPI_UNKNOWN,
 )
-from . import _make_pwm_device
 
 if TYPE_CHECKING:
     from types import MappingProxyType

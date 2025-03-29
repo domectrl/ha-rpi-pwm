@@ -1,7 +1,7 @@
 """Config flow definition for rpi_pwm."""
 
-from genericpath import isfile
 import logging
+from pathlib import Path
 from typing import Any, ClassVar
 
 import voluptuous as vol
@@ -18,12 +18,11 @@ from homeassistant.const import (
     CONF_MAXIMUM,
     CONF_MINIMUM,
     CONF_MODE,
-    CONF_PIN,
     CONF_NAME,
+    CONF_PIN,
     CONF_TYPE,
     Platform,
 )
-from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
@@ -31,27 +30,25 @@ from .const import (
     CONF_INVERT,
     CONF_NORMALIZE_LOWER,
     CONF_NORMALIZE_UPPER,
+    CONF_RPI,
+    CONF_RPI_MODEL,
     CONF_STEP,
     CONST_PWM_FREQ_MAX,
     CONST_PWM_FREQ_MIN,
     DEFAULT_FREQ,
     DOMAIN,
-    MODE_AUTO,
-    MODE_BOX,
-    MODE_SLIDER,
     GPIO12,
     GPIO13,
     GPIO18,
     GPIO19,
-    RPI_PWM_PINS,
+    MODE_AUTO,
+    MODE_BOX,
+    MODE_SLIDER,
     RPI1_2_3,
     RPI5,
-    CONF_RPI,
+    RPI_PWM_PINS,
     RPI_UNKNOWN,
-    CONF_RPI_MODEL,
 )
-
-from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
 
