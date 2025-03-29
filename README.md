@@ -1,6 +1,6 @@
 # Home Assistant Raspberry Pi PWM custom integration
 
-**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant depends on pigpio, and does not support the RPi5 hardware. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). This variant is installable and configurable via confg flow instead of via YAML.**
+**The original Home Assistant integration that supported PWM output on direct IO pins  was removed in Home Assistant Core 2022.4. The original rpi_gpi_pwm was stored [here](https://github.com/RedMeKool/HA-Raspberry-pi-GPIO-PWM/). This variant depends on the pigpio add-on, and does not support the RPi5 hardware. In order to make the integration simpler, and less dependency-prone, and running on the RPi5, this integration moves to the lightweight alternative [rpi-hardware-pwm](https://pypi.org/project/rpi-hardware-pwm). This variant is installable and configurable via confg flow instead of via YAML, and does not need other components to be installed on [Home Assistant OS](https://github.com/home-assistant/operating-system). You will only need to configure the overlays in advance.**
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
@@ -52,29 +52,17 @@ Platform | Description
 This integration can no longer be configured via YAML. Use the config flow function instead. 
 ### Configuration parameters
 
-***Generic settings:***
-- I2C bus: Select the I2C bus where the PCA9685 is connected. Use tools like i2cdetect to find the right bus.
-  > default: first bus found in the system
-- I2C address: I2C address of the LED driver
-  > default: 0x40 (decimal 64)
-- frequency: The PWM frequency. 
-  > default: 200 Hz
-
-***Choosing entities:***
-In the next menu, one can choose what entities to add. The possible entities shown depend on the amount of pins left without a function. If all pins are occupied, or if the user presses the 'Finish' button, the integration will be added.
-
-***Light specific settings:***
-- name: Name of the Light to create.
+***Light, Fan and number shared settings:***
+- name: Name of the entity to create.
   > default: empty 
-- pin(s): Select the pins to be used for your entity. 
-  Note that the numbering of the pins starts from 0 up to 15. Only the pins not yet occupied by other entities can be selected.
+- pin: Select the pin to be used for your entity. 
+  Note that the numbering of the pins corresponds with the GPIO numbers like shown on [pinouts](https://pinout.xyz/). Only the pins not yet occupied by other entities can be selected. Note that only 2 pins can be configured as a PWM pin at the same time, so after configuring 2 pins the config flow will forbide you to add more devices. Note also that you will have to [configure your overlays](https://pypi.org/project/rpi-hardware-pwm) to make the pins of your choice generating PWM output.
   > default: first / next pin available
+- frequency: Frequency of the PWM cycles.
+  Only for light and number, for fan this value is set to the default (100Hz).
+  > default: 100Hz
 
 ***number specific settings:***
-- name: Name of the Number to create.
-  > default: empty 
-- pin: The pin connected to the number. Numbering starts from 0 up to 15.
-  > default: first / next pin available
 - invert: Invert signal of the PWM generator
   > default: false
 - minimum: Minimal value of the number.
