@@ -29,6 +29,7 @@ from .const import (
     CONF_RPI,
     CONF_RPI_MODEL,
     CONF_STEP,
+    CONST_PWM_MAX,
     DOMAIN,
     RPI_UNKNOWN,
 )
@@ -141,27 +142,25 @@ class RpiPwmNumber(RestoreNumber):
         value = max(value, self._config[CONF_MINIMUM])
         value = min(value, self._config[CONF_MAXIMUM])
 
-        # In case the invert bit is on, invert the value
-        used_value = value
-        if self._config[CONF_INVERT]:
-            used_value = self._config[CONF_NORMALIZE_UPPER] - value
-        used_value -= self._config[CONF_NORMALIZE_LOWER]
-        # Scale range from N_L..N_U to 0..65535 (pca9685)
-        range_pwm = 100.0
-        range_value = (
+        # Scale range from N_L..N_U to 0..100%
+        range_pwm = CONST_PWM_MAX
+        range_normalized = (
             self._config[CONF_NORMALIZE_UPPER] - self._config[CONF_NORMALIZE_LOWER]
         )
+        scaled_to_pwm = (value - self._config[CONF_NORMALIZE_LOWER]) * (
+            range_pwm / range_normalized
+        )
 
-        # Scale to range of the driver
-        scaled_value = round((used_value / range_value) * range_pwm)
-        # Make sure it will fit in the 12-bits range of the pca9685
-        scaled_value = min(range_pwm, scaled_value)
-        scaled_value = max(0, scaled_value)
+        if self._config[CONF_INVERT]:
+            scaled_to_pwm = CONST_PWM_MAX - scaled_to_pwm
+        # Make sure it will fit in the 0..100 range
+        scaled_to_pwm = min(CONST_PWM_MAX, scaled_to_pwm)
+        scaled_to_pwm = max(0, scaled_to_pwm)
         # Set value to driver
         if not self._simulate_rpi:
             self._hass.async_add_executor_job(
                 self._pwm.change_duty_cycle,
-                scaled_value,
+                scaled_to_pwm,
             )
         self._attr_native_value = value
         self.schedule_update_ha_state()
