@@ -9,4 +9,4 @@ homeassistant:
 logger:
   default: info
   logs:
-    custom_components.ha-rpi-pwm: debug
+    custom_components.rpi_pwm: debug

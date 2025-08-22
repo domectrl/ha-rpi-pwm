@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PIN, Platform
 from homeassistant.core import HomeAssistant
 from rpi_hardware_pwm import HardwarePWM
+from platform import uname
 
 from .const import (
     CONF_FREQUENCY,
@@ -16,6 +17,7 @@ from .const import (
     GPIO18,
     GPIO19,
     RPI5,
+    KERNEL_VERSION_RPI5_CHIP_2,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +32,10 @@ def _make_pwm_device(config: MappingProxyType[str, Any]) -> HardwarePWM:
     if config[CONF_PIN] in [GPIO13, GPIO19]:
         channel = 1
     if config[CONF_RPI] == RPI5:
-        chip = 2
+        release = uname().release.split(".")
+        kernel_version = float(release[0] + "." + release[1])
+        if kernel_version <= KERNEL_VERSION_RPI5_CHIP_2:
+            chip = 2
         if config[CONF_PIN] in [GPIO18, GPIO19]:
             channel += 2
     pwm = HardwarePWM(
