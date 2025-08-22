@@ -1,6 +1,7 @@
 """The rpi PWM component."""
 
 import logging
+from platform import uname
 from types import MappingProxyType
 from typing import Any
 
@@ -8,7 +9,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PIN, Platform
 from homeassistant.core import HomeAssistant
 from rpi_hardware_pwm import HardwarePWM
-from platform import uname
 
 from .const import (
     CONF_FREQUENCY,
@@ -16,8 +16,8 @@ from .const import (
     GPIO13,
     GPIO18,
     GPIO19,
-    RPI5,
     KERNEL_VERSION_RPI5_CHIP_2,
+    RPI5,
 )
 
 _LOGGER = logging.getLogger(__name__)
